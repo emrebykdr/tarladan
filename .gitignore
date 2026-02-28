@@ -1,0 +1,52 @@
+## .NET / ASP.NET Core
+bin/
+obj/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+## Build results
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+build/
+bld/
+
+## NuGet
+*.nupkg
+**/packages/*
+*.nuget.props
+*.nuget.targets
+
+## Visual Studio
+.vs/
+*.rsuser
+*.userprefs
+
+## User-specific files
+*.suo
+*.user
+*.sln.docstates
+
+## Build output
+build_output*.txt
+*.resolved
+
+## OS files
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+.DS_Store
+
+## Uploads (user generated content)
+wwwroot/uploads/*
+!wwwroot/uploads/.gitkeep
+
+## Misc
+*.log
+*.tmp
+new.txt
+analiz.resolved
+walkthrough.md.resolved

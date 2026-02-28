@@ -1,0 +1,472 @@
+@model ChatViewModel
+@{
+    var conv = Model.Conversation;
+    var otherPartyName = Model.IsSeller
+        ? (conv.Buyer?.FullName ?? "Alıcı")
+        : (conv.Seller?.FullName ?? "Satıcı");
+    var productName = conv.Product?.Name ?? "Ürün";
+    ViewData["Title"] = $"Sohbet - {otherPartyName}";
+}
+
+<div class="chat-page animated-fade-in">
+    <!-- BAŞLIK -->
+    <div class="chat-header-bar">
+        <a href="/Chat" class="btn-back"><i class="fas fa-chevron-left"></i></a>
+        <div class="chat-header-info">
+            <div class="header-avatar">@otherPartyName.Substring(0, 1).ToUpper()</div>
+            <div class="header-text">
+                <h2>@otherPartyName</h2>
+                <div class="chat-product-link">
+                    <i class="fas fa-leaf"></i> <span>@productName</span>
+                    <span class="dot"></span>
+                    <span class="price">₺@conv.Product?.Price.ToString("N2")</span>
+                </div>
+            </div>
+        </div>
+        <div class="header-actions">
+            <button class="btn-icon" title="Bilgi"><i class="fas fa-info-circle"></i></button>
+        </div>
+    </div>
+
+    <div class="chat-layout">
+        <!-- MESAJ ALANI -->
+        <div class="chat-messages-panel">
+            <div class="chat-messages" id="chatMessages">
+                @if (!Model.Messages.Any())
+                {
+                    <div class="chat-empty">
+                        <div class="empty-icon"><i class="fas fa-comments"></i></div>
+                        <p>Sohbet başlatıldı! İlk mesajınızı göndererek pazarlığa başlayın.</p>
+                    </div>
+                }
+                @foreach (var msg in Model.Messages.OrderBy(m => m.SentAt))
+                {
+                    var isOwn = msg.SenderId == Model.CurrentUserId;
+                    <div class="chat-bubble-wrapper @(isOwn ? "is-own" : "is-other")">
+                        <div class="chat-bubble">
+                            @if (!isOwn)
+                            {
+                                <span class="chat-sender">@(msg.Sender?.FullName ?? "Kullanıcı")</span>
+                            }
+                            
+                            @if (!string.IsNullOrEmpty(msg.AudioFilePath))
+                            {
+                                <div class="voice-message">
+                                    <button class="voice-play-btn" onclick="toggleVoicePlay(this)"><i class="fas fa-play"></i></button>
+                                    <audio src="@msg.AudioFilePath" onplay="this.previousElementSibling.innerHTML='<i class=\'fas fa-pause\'></i>'" onpause="this.previousElementSibling.innerHTML='<i class=\'fas fa-play\'></i>'" onended="this.previousElementSibling.innerHTML='<i class=\'fas fa-play\'></i>'"></audio>
+                                    <div class="voice-waveform">
+                                        @for(int i=0; i<15; i++) { <div class="voice-wave-bar"></div> }
+                                    </div>
+                                    <span class="voice-duration">@msg.Content.Replace("🎤 ", "")</span>
+                                </div>
+                            }
+                            else if (msg.Content.Contains("🎤 Sesli mesaj"))
+                            {
+                                <div class="voice-message">
+                                    <span class="voice-icon"><i class="fas fa-microphone"></i></span>
+                                    <span class="voice-duration">@msg.Content.Replace("🎤 ", "")</span>
+                                </div>
+                            }
+                            else
+                            {
+                                <div class="message-content">@msg.Content</div>
+                            }
+                            
+                            <div class="bubble-footer">
+                                <span class="chat-time">@msg.SentAt.ToString("HH:mm")</span>
+                                @if (isOwn) { <i class="fas fa-check-double read-receipt"></i> }
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+
+            <!-- HAZIR CEVAPLAR -->
+            <div class="quick-replies-container">
+                <div class="quick-replies" id="quickReplies">
+                    @if (!Model.IsSeller)
+                    {
+                        <button class="quick-reply-btn" data-msg="Merhaba, ürününüzle ilgileniyorum.">👋 Merhaba</button>
+                        <button class="quick-reply-btn" data-msg="Fiyatta biraz indirim yapabilir misiniz?">💰 İndirim?</button>
+                        <button class="quick-reply-btn" data-msg="Toptan alırsam fiyat ne olur?">📦 Toptan?</button>
+                        <button class="quick-reply-btn" data-msg="Kargolama yapıyor musunuz?">🚚 Kargo?</button>
+                    }
+                    else
+                    {
+                        <button class="quick-reply-btn" data-msg="Merhaba, hoş geldiniz! Size nasıl yardımcı olabilirim?">👋 Merhaba</button>
+                        <button class="quick-reply-btn" data-msg="Ürünlerimiz günlük taze olarak hazırlanmaktadır.">🌿 Günlük Taze</button>
+                        <button class="quick-reply-btn" data-msg="Toptan alımlarda özel fiyat yapabiliriz.">📦 Toptan İndirim</button>
+                    }
+                </div>
+            </div>
+
+            <!-- MESAJ GÖNDERİM FORMU -->
+            <div class="chat-input-wrapper">
+                <div class="chat-input-area">
+                    <button type="button" id="voiceRecordBtn" class="btn-input-action" title="Sesli Mesaj">
+                        <i class="fas fa-microphone"></i>
+                    </button>
+                    <div class="input-container">
+                        <textarea id="messageInput" placeholder="Mesajınızı yazın..." rows="1" maxlength="1000"></textarea>
+                    </div>
+                    <button type="button" id="sendMessageBtn" class="btn-send">
+                        <i class="fas fa-paper-plane"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- SESLİ MESAJ KAYIT DURUMU -->
+            <div class="voice-recording-bar" id="voiceRecordingBar" style="display: none;">
+                <div class="voice-recording-indicator">
+                    <span class="voice-dot"></span>
+                    <span>Kayıt yapılıyor...</span>
+                    <span id="voiceTimer">00:00</span>
+                </div>
+                <div class="voice-recording-actions">
+                    <button type="button" id="voiceCancelBtn" class="btn btn-sm btn-outline" title="İptal">
+                        <i class="fas fa-times"></i> İptal
+                    </button>
+                    <button type="button" id="voiceSendBtn" class="btn btn-sm btn-primary" title="Gönder">
+                        <i class="fas fa-paper-plane"></i> Gönder
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- TEKLİF PANELİ -->
+        <div class="chat-offer-panel">
+            <h3><i class="fas fa-handshake"></i> Teklifler</h3>
+
+            <!-- MEVCUT TEKLİFLER -->
+            @if (Model.Offers.Any())
+            {
+                <div class="offer-list">
+                    @foreach (var offer in Model.Offers.OrderByDescending(o => o.CreatedAt))
+                    {
+                        var isOwnOffer = offer.SenderId == Model.CurrentUserId;
+                        var senderName = isOwnOffer ? "Siz" : (offer.Sender?.FullName ?? "Karşı Taraf");
+                        var statusClass = offer.Status switch
+                        {
+                            TarimPazari.Core.Enums.OfferStatus.Pending => "status-pending",
+                            TarimPazari.Core.Enums.OfferStatus.Accepted => "status-accepted",
+                            TarimPazari.Core.Enums.OfferStatus.Rejected => "status-rejected",
+                            _ => ""
+                        };
+                        var statusText = offer.Status switch
+                        {
+                            TarimPazari.Core.Enums.OfferStatus.Pending => "Beklemede",
+                            TarimPazari.Core.Enums.OfferStatus.Accepted => "Kabul Edildi",
+                            TarimPazari.Core.Enums.OfferStatus.Rejected => "Reddedildi",
+                            TarimPazari.Core.Enums.OfferStatus.Countered => "Karşı Teklif",
+                            _ => offer.Status.ToString()
+                        };
+
+                        <div class="offer-card @statusClass">
+                            <div class="offer-card-header">
+                                <strong>@senderName</strong>
+                                <span class="badge @statusClass">@statusText</span>
+                            </div>
+                            <div class="offer-card-body">
+                                <div class="offer-detail"><i class="fas fa-tag"></i> ₺@offer.OfferedPrice.ToString("N2") / birim</div>
+                                <div class="offer-detail"><i class="fas fa-cubes"></i> @offer.Quantity adet</div>
+                                <div class="offer-detail"><strong>Toplam: ₺@((offer.OfferedPrice * offer.Quantity).ToString("N2"))</strong></div>
+                                @if (offer.DeliveryDate.HasValue)
+                                {
+                                    <div class="offer-detail"><i class="fas fa-calendar"></i> @offer.DeliveryDate.Value.ToString("dd.MM.yyyy")</div>
+                                }
+                                @if (!string.IsNullOrEmpty(offer.DeliveryLocation))
+                                {
+                                    <div class="offer-detail"><i class="fas fa-map-marker-alt"></i> @offer.DeliveryLocation</div>
+                                }
+                                @if (!string.IsNullOrEmpty(offer.Note))
+                                {
+                                    <div class="offer-note">@offer.Note</div>
+                                }
+                            </div>
+                            @if (offer.Status == TarimPazari.Core.Enums.OfferStatus.Pending && !isOwnOffer)
+                            {
+                                <div class="offer-card-actions">
+                                    <form asp-controller="Chat" asp-action="AcceptOffer" method="post" style="display: inline;">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="id" value="@offer.Id" />
+                                        <input type="hidden" name="conversationId" value="@conv.Id" />
+                                        <button type="submit" class="btn btn-sm btn-success"><i class="fas fa-check"></i> Kabul Et</button>
+                                    </form>
+                                    <form asp-controller="Chat" asp-action="RejectOffer" method="post" style="display: inline;">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="id" value="@offer.Id" />
+                                        <input type="hidden" name="conversationId" value="@conv.Id" />
+                                        <button type="submit" class="btn btn-sm btn-danger"><i class="fas fa-times"></i> Reddet</button>
+                                    </form>
+                                </div>
+                            }
+                        </div>
+                    }
+                </div>
+            }
+            else
+            {
+                <p class="offer-empty"><i class="fas fa-info-circle"></i> Henüz teklif yok.</p>
+            }
+
+            <!-- YENİ TEKLİF FORMU -->
+            <div class="offer-form-section">
+                <h4><i class="fas fa-plus-circle"></i> Yeni Teklif Ver</h4>
+                <form asp-controller="Chat" asp-action="CreateOffer" method="post">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="ConversationId" value="@conv.Id" />
+
+                    <div class="form-group">
+                        <label>Birim Fiyat (₺)</label>
+                        <input type="number" name="OfferedPrice" class="form-control form-control-sm" step="0.01" min="0.01" required />
+                    </div>
+                    <div class="form-group">
+                        <label>Miktar</label>
+                        <input type="number" name="Quantity" class="form-control form-control-sm" min="1" required />
+                    </div>
+                    <div class="form-group">
+                        <label>Teslimat Tarihi</label>
+                        <input type="date" name="DeliveryDate" class="form-control form-control-sm" />
+                    </div>
+                    <div class="form-group">
+                        <label>Buluşma Yeri</label>
+                        <input type="text" name="DeliveryLocation" class="form-control form-control-sm" maxlength="500" />
+                    </div>
+                    <div class="form-group">
+                        <label>Not</label>
+                        <textarea name="Note" class="form-control form-control-sm" rows="2" maxlength="500"></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-block btn-sm"><i class="fas fa-paper-plane"></i> Teklif Gönder</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // SignalR bağlantısı
+        const conversationId = @conv.Id;
+        const currentUserId = "@Model.CurrentUserId";
+        const connection = new signalR.HubConnectionBuilder()
+            .withUrl("/chatHub")
+            .withAutomaticReconnect()
+            .build();
+
+        // ========== YARDIMCI FONKSİYONLAR ==========
+        function escapeHtml(text) {
+            const div = document.createElement("div");
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function createVoiceBubble(audioSrc, durationSeconds, sentAt, isOwn, senderName) {
+            const wrapper = document.createElement("div");
+            wrapper.className = "chat-bubble-wrapper " + (isOwn ? "is-own" : "is-other");
+            const bubble = document.createElement("div");
+            bubble.className = "chat-bubble";
+            const durMin = String(Math.floor(durationSeconds / 60)).padStart(2, '0');
+            const durSec = String(durationSeconds % 60).padStart(2, '0');
+
+            let html = "";
+            if (!isOwn && senderName) {
+                html += '<span class="chat-sender">' + escapeHtml(senderName) + '</span>';
+            }
+            html += '<div class="voice-message">';
+            html += '  <button class="voice-play-btn" onclick="toggleVoicePlay(this)"><i class="fas fa-play"></i></button>';
+            html += '  <audio src="' + audioSrc + '" onplay="this.previousElementSibling.innerHTML=\'<i class=\\\'fas fa-pause\\\'></i>\'" onpause="this.previousElementSibling.innerHTML=\'<i class=\\\'fas fa-play\\\'></i>\'" onended="this.previousElementSibling.innerHTML=\'<i class=\\\'fas fa-play\\\'></i>\'"></audio>';
+            html += '  <div class="voice-waveform">';
+            for (let i = 0; i < 12; i++) html += '<div class="voice-wave-bar"></div>';
+            html += '  </div>';
+            html += '  <span class="voice-duration">' + durMin + ':' + durSec + '</span>';
+            html += '</div>';
+            html += '<div class="bubble-footer"><span class="chat-time">' + sentAt + '</span>';
+            if (isOwn) html += '<i class="fas fa-check-double read-receipt"></i>';
+            html += '</div>';
+
+            bubble.innerHTML = html;
+            wrapper.appendChild(bubble);
+            return wrapper;
+        }
+
+        function toggleVoicePlay(btn) {
+            const audio = btn.nextElementSibling;
+            if (audio.paused) { audio.play(); } else { audio.pause(); }
+        }
+
+        // ========== MESAJ ALMA ==========
+        connection.on("ReceiveMessage", function (data) {
+            const chatMessages = document.getElementById("chatMessages");
+            const isOwn = data.senderId === currentUserId;
+
+            // Sesli mesaj metni gelirse görmezden gel (ses ayrı event ile gelir)
+            if (data.content && data.content.includes("🎤 Sesli mesaj")) return;
+
+            const wrapper = document.createElement("div");
+            wrapper.className = "chat-bubble-wrapper " + (isOwn ? "is-own" : "is-other");
+            const bubble = document.createElement("div");
+            bubble.className = "chat-bubble";
+
+            let html = "";
+            if (!isOwn) {
+                html += '<span class="chat-sender">' + escapeHtml(data.senderName) + '</span>';
+            }
+            html += '<div class="message-content">' + escapeHtml(data.content) + '</div>';
+            html += '<div class="bubble-footer"><span class="chat-time">' + data.sentAt + '</span>';
+            if (isOwn) html += '<i class="fas fa-check-double read-receipt"></i>';
+            html += '</div>';
+            bubble.innerHTML = html;
+            wrapper.appendChild(bubble);
+
+            const emptyMsg = chatMessages.querySelector('.chat-empty');
+            if (emptyMsg) emptyMsg.remove();
+
+            chatMessages.appendChild(wrapper);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        });
+
+        // ========== SESLİ MESAJ ALMA ==========
+        connection.on("ReceiveVoiceMessage", function (data) {
+            const chatMessages = document.getElementById("chatMessages");
+            const isOwn = data.senderId === currentUserId;
+
+            const bubble = createVoiceBubble(data.audioUrl, data.durationSeconds, data.sentAt, isOwn, data.senderName);
+
+            const emptyMsg = chatMessages.querySelector('.chat-empty');
+            if (emptyMsg) emptyMsg.remove();
+
+            chatMessages.appendChild(bubble);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        });
+
+        // Teklif bildirimi
+        connection.on("ReceiveOffer", function (data) {
+            location.reload();
+        });
+
+        // Bağlantıyı başlat
+        connection.start().then(function () {
+            connection.invoke("JoinConversation", conversationId);
+        }).catch(function (err) {
+            console.error("SignalR bağlantı hatası:", err);
+        });
+
+        // ========== METİN MESAJ GÖNDER ==========
+        document.getElementById("sendMessageBtn").addEventListener("click", sendMessage);
+        document.getElementById("messageInput").addEventListener("keypress", function (e) {
+            if (e.key === "Enter") sendMessage();
+        });
+
+        function sendMessage() {
+            const input = document.getElementById("messageInput");
+            const content = input.value.trim();
+            if (content) {
+                connection.invoke("SendMessage", conversationId, content).catch(function (err) {
+                    console.error("Mesaj gönderme hatası:", err);
+                });
+                input.value = "";
+            }
+        }
+
+        // Sayfanın en altına scroll
+        window.addEventListener("load", function () {
+            const chatMessages = document.getElementById("chatMessages");
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        });
+
+        // ========== HAZIR CEVAPLAR ==========
+        document.querySelectorAll('.quick-reply-btn').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                const msg = this.getAttribute('data-msg');
+                if (msg) {
+                    connection.invoke("SendMessage", conversationId, msg).catch(function (err) {
+                        console.error("Mesaj gönderme hatası:", err);
+                    });
+                }
+            });
+        });
+
+        // ========== SESLİ MESAJ KAYIT ==========
+        let mediaRecorder = null;
+        let audioChunks = [];
+        let voiceTimer = null;
+        let voiceSeconds = 0;
+
+        const voiceRecordBtn = document.getElementById('voiceRecordBtn');
+        const voiceRecordingBar = document.getElementById('voiceRecordingBar');
+        const voiceCancelBtn = document.getElementById('voiceCancelBtn');
+        const voiceSendBtn = document.getElementById('voiceSendBtn');
+        const voiceTimerEl = document.getElementById('voiceTimer');
+        const chatInputArea = document.querySelector('.chat-input-area');
+
+        voiceRecordBtn.addEventListener('click', startRecording);
+        voiceCancelBtn.addEventListener('click', cancelRecording);
+        voiceSendBtn.addEventListener('click', stopAndSendRecording);
+
+        function startRecording() {
+            navigator.mediaDevices.getUserMedia({ audio: true })
+                .then(function (stream) {
+                    mediaRecorder = new MediaRecorder(stream);
+                    audioChunks = [];
+                    mediaRecorder.ondataavailable = function (e) {
+                        audioChunks.push(e.data);
+                    };
+                    mediaRecorder.start();
+                    voiceSeconds = 0;
+                    voiceTimerEl.textContent = '00:00';
+                    voiceTimer = setInterval(function () {
+                        voiceSeconds++;
+                        const m = String(Math.floor(voiceSeconds / 60)).padStart(2, '0');
+                        const s = String(voiceSeconds % 60).padStart(2, '0');
+                        voiceTimerEl.textContent = m + ':' + s;
+                    }, 1000);
+
+                    chatInputArea.style.display = 'none';
+                    voiceRecordingBar.style.display = 'flex';
+                })
+                .catch(function (err) {
+                    alert('Mikrofon erişimi reddedildi. Lütfen tarayıcı ayarlarından mikrofon iznini verin.');
+                    console.error('Mikrofon hatası:', err);
+                });
+        }
+
+        function cancelRecording() {
+            if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+                mediaRecorder.stop();
+                mediaRecorder.stream.getTracks().forEach(t => t.stop());
+            }
+            clearInterval(voiceTimer);
+            audioChunks = [];
+            voiceRecordingBar.style.display = 'none';
+            chatInputArea.style.display = 'flex';
+        }
+
+        function stopAndSendRecording() {
+            if (!mediaRecorder || mediaRecorder.state === 'inactive') return;
+
+            mediaRecorder.onstop = function () {
+                clearInterval(voiceTimer);
+                mediaRecorder.stream.getTracks().forEach(t => t.stop());
+
+                const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+                const duration = voiceSeconds;
+
+                // Blob'u base64'e çevir ve SignalR ile gönder
+                const reader = new FileReader();
+                reader.onloadend = function () {
+                    // data:audio/webm;base64,XXXX formatından sadece base64 kısmını al
+                    const base64data = reader.result.split(',')[1];
+
+                    connection.invoke("SendVoiceMessage", conversationId, base64data, duration).catch(function (err) {
+                        console.error("Sesli mesaj gönderme hatası:", err);
+                    });
+                };
+                reader.readAsDataURL(audioBlob);
+
+                voiceRecordingBar.style.display = 'none';
+                chatInputArea.style.display = 'flex';
+            };
+            mediaRecorder.stop();
+        }
+    </script>
+}

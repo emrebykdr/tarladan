@@ -1,0 +1,128 @@
+﻿<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="TARLADAN - Tarladan sofrana, aracısız tarım ticareti. Çiftçilerden doğrudan taze ürünler." />
+    <title>@ViewData["Title"] - TARLADAN</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+</head>
+<body>
+    <!-- NAVİGASYON -->
+    <nav class="navbar">
+        <div class="container nav-content">
+            <a class="nav-brand" href="/">
+                <img src="~/images/logo.png" alt="TARLADAN Logo" class="nav-brand-logo" />
+                TARLADAN
+            </a>
+
+            <!-- NAVBAR ARAMA -->
+            <form method="get" asp-controller="Home" asp-action="Index" class="nav-search">
+                <i class="fas fa-search"></i>
+                <input type="text" name="search" placeholder="Ürün, çiftçi veya kategori ara..." />
+                <button type="submit" class="nav-search-btn">Ara</button>
+            </form>
+
+            <!-- MOBİL MENÜ TOGGLE -->
+            <button class="mobile-menu-toggle" onclick="document.querySelector('.nav-links').classList.toggle('mobile-open')" aria-label="Menü">
+                <i class="fas fa-bars"></i>
+            </button>
+
+            <div class="nav-links">
+                @if (User.Identity != null && User.Identity.IsAuthenticated)
+                {
+                    <a href="/Home/Dashboard" class="nav-link"><i class="fas fa-tachometer-alt"></i> Panel</a>
+                    <a href="/Chat" class="nav-link"><i class="fas fa-comments"></i> Sohbetler</a>
+                    <a href="/Order" class="nav-link"><i class="fas fa-shopping-bag"></i> Siparişler</a>
+
+                    @if (User.IsInRole("Ciftci"))
+                    {
+                        <a href="/Product" class="nav-link"><i class="fas fa-box"></i> Ürünlerim</a>
+                    }
+                    @if (User.IsInRole("Admin"))
+                    {
+                        <a href="/Admin" class="nav-link"><i class="fas fa-users-cog"></i> Yönetim</a>
+                    }
+
+                    <div class="nav-user">
+                        <span class="user-greeting">
+                            <i class="fas fa-user-circle"></i> @User.Identity.Name
+                        </span>
+                        <form asp-controller="Account" asp-action="Logout" method="post" class="logout-form">
+                            @Html.AntiForgeryToken()
+                            <button type="submit" class="btn btn-logout"><i class="fas fa-sign-out-alt"></i> Çıkış</button>
+                        </form>
+                    </div>
+                }
+                else
+                {
+                    <a href="/Account/Login" class="btn btn-outline"><i class="fas fa-sign-in-alt"></i> Giriş Yap</a>
+                    <a href="/Product/Create" class="btn btn-primary">+ İlan Ver</a>
+                }
+            </div>
+        </div>
+    </nav>
+
+    <!-- KATEGORİ BARI -->
+    <div class="category-bar">
+        <div class="category-bar-content">
+            <a href="/" class="category-bar-link">Tüm Kategoriler</a>
+            <a href="/?category=Sebze" class="category-bar-link @(ViewBag.Category as string == "Sebze" ? "active" : "")">Taze Sebze</a>
+            <a href="/?category=Meyve" class="category-bar-link @(ViewBag.Category as string == "Meyve" ? "active" : "")">Meyve</a>
+            <a href="/?category=Süt" class="category-bar-link @(ViewBag.Category as string == "Süt" ? "active" : "")">Süt ve Süt Ürünleri</a>
+            <a href="/?category=Organik" class="category-bar-link @(ViewBag.Category as string == "Organik" ? "active" : "")">Organik Ürünler</a>
+            <a href="/?category=Tahıl" class="category-bar-link @(ViewBag.Category as string == "Tahıl" ? "active" : "")">Fide & Tohum</a>
+            <a href="/?category=Baklagil" class="category-bar-link @(ViewBag.Category as string == "Baklagil" ? "active" : "")">Yöresel Lezzetler</a>
+        </div>
+    </div>
+
+    <!-- BİLDİRİMLER -->
+    <div class="container">
+        @if (TempData["Success"] != null)
+        {
+            <div class="alert alert-success">
+                <i class="fas fa-check-circle"></i> @TempData["Success"]
+            </div>
+        }
+        @if (TempData["Error"] != null)
+        {
+            <div class="alert alert-error">
+                <i class="fas fa-exclamation-circle"></i> @TempData["Error"]
+            </div>
+        }
+    </div>
+
+    <!-- ANA İÇERİK -->
+    <main class="container main-content">
+        @RenderBody()
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="footer">
+        <div class="container footer-content">
+            <div class="footer-brand">
+                <img src="~/images/logo.png" alt="TARLADAN Logo" class="footer-logo" />
+                <span>TARLADAN</span>
+                <p>Tarladan Sofrana, Aracısız Tarım Ticareti</p>
+            </div>
+            <div class="footer-links">
+                <a href="/Home/About">Hakkımızda</a>
+                <a href="#">İletişim</a>
+                <a href="#">Gizlilik</a>
+            </div>
+            <div class="footer-copy">
+                &copy; @DateTime.Now.Year TARLADAN - Tüm hakları saklıdır.
+            </div>
+        </div>
+    </footer>
+
+    <!-- SignalR -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.0/signalr.min.js"></script>
+
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

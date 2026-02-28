@@ -1,0 +1,295 @@
+@model ProductCreateViewModel
+@{
+    ViewData["Title"] = "Ürünü Düzenle";
+}
+
+<div class="page-header animated-fade-in">
+    <div class="header-content">
+        <h1><i class="fas fa-edit"></i> Ürün İlanını Düzenle</h1>
+        <p>İlan bilgilerinizi güncelleyerek alıcıların dikkatini çekin</p>
+    </div>
+</div>
+
+<div class="container-narrow animate-slide-up">
+    <div class="auth-card glass-panel shadow-xl mb-5">
+        <form asp-action="Edit" asp-route-id="@ViewBag.ProductId" method="post" id="productForm" class="premium-form">
+            <div asp-validation-summary="ModelOnly" class="text-danger mb-4"></div>
+
+            <div class="form-section-header">
+                <h3><i class="fas fa-info-circle"></i> Temel Bilgiler</h3>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group floating-label-group">
+                    <div class="input-with-icon">
+                        <i class="fas fa-shopping-basket"></i>
+                        <input asp-for="Name" class="form-control" placeholder="Ürün Adı" required />
+                    </div>
+                    <label asp-for="Name">Ürün Adı</label>
+                    <span asp-validation-for="Name" class="text-danger"></span>
+                </div>
+                
+                <div class="form-group floating-label-group">
+                    <div class="input-with-icon">
+                        <i class="fas fa-list"></i>
+                        <select asp-for="Category" class="form-control" required>
+                            <option value="">Kategori Seçin</option>
+                            <option>Meyve</option>
+                            <option>Sebze</option>
+                            <option>Tahıl</option>
+                            <option>Baklagil</option>
+                            <option>Süt Ürünleri</option>
+                            <option>Et Ürünleri</option>
+                            <option>Diğer</option>
+                        </select>
+                    </div>
+                    <label asp-for="Category">Kategori</label>
+                </div>
+            </div>
+
+            <div class="form-group floating-label-group">
+                <div class="input-with-icon">
+                    <i class="fas fa-align-left"></i>
+                    <textarea asp-for="Description" class="form-control" rows="3" placeholder="Ürün açıklaması..."></textarea>
+                </div>
+                <label asp-for="Description">Açıklama</label>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group floating-label-group">
+                    <div class="input-with-icon">
+                        <i class="fas fa-lira-sign"></i>
+                        <input asp-for="Price" class="form-control" type="number" step="0.01" placeholder="Fiyat" required />
+                    </div>
+                    <label asp-for="Price">Birim Fiyat</label>
+                    <span asp-validation-for="Price" class="text-danger"></span>
+                </div>
+                
+                <div class="form-group floating-label-group">
+                    <div class="input-with-icon">
+                        <i class="fas fa-weight-hanging"></i>
+                        <select asp-for="Unit" class="form-control">
+                            <option value="kg">Kilogram (kg)</option>
+                            <option value="adet">Adet</option>
+                            <option value="ton">Ton</option>
+                            <option value="litre">Litre</option>
+                            <option value="kasa">Kasa</option>
+                        </select>
+                    </div>
+                    <label asp-for="Unit">Birim</label>
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group floating-label-group">
+                    <div class="input-with-icon">
+                        <i class="fas fa-cubes"></i>
+                        <input asp-for="StockQuantity" class="form-control" type="number" placeholder="Stok" required />
+                    </div>
+                    <label asp-for="StockQuantity">Stok Miktarı</label>
+                    <span asp-validation-for="StockQuantity" class="text-danger"></span>
+                </div>
+                
+                <div class="form-group floating-label-group">
+                    <div class="input-with-icon">
+                        <i class="fas fa-truck-loading"></i>
+                        <input asp-for="MinimumOrderQuantity" class="form-control" type="number" placeholder="Min. Satış" />
+                    </div>
+                    <label asp-for="MinimumOrderQuantity">Minumum Sipariş</label>
+                </div>
+            </div>
+
+            <div class="form-section-header mt-4">
+                <h3><i class="fas fa-leaf"></i> Kalite ve Kaynak</h3>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group floating-label-group">
+                    <div class="input-with-icon">
+                        <i class="fas fa-city"></i>
+                        <input asp-for="CityOfOrigin" class="form-control" placeholder="Şehir" />
+                    </div>
+                    <label asp-for="CityOfOrigin">Yetiştiği Yer</label>
+                </div>
+                
+                <div class="form-group floating-label-group">
+                    <div class="input-with-icon">
+                        <i class="fas fa-calendar-check"></i>
+                        <input asp-for="HarvestDate" class="form-control" type="date" />
+                    </div>
+                    <label asp-for="HarvestDate">Hasat Tarihi</label>
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group mb-4">
+                    <div class="custom-control custom-checkbox-premium">
+                        <input type="checkbox" asp-for="IsOrganic" id="chkOrganic" />
+                        <label for="chkOrganic">
+                            <span class="chk-box"><i class="fas fa-check"></i></span>
+                            <span class="chk-text">Organik Ürün</span>
+                        </label>
+                    </div>
+                </div>
+                
+                <div class="form-group floating-label-group">
+                    <div class="input-with-icon">
+                        <i class="fas fa-certificate"></i>
+                        <input asp-for="CertificationDetails" class="form-control" placeholder="Sertifika" />
+                    </div>
+                    <label asp-for="CertificationDetails">Sertifika Bilgisi</label>
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group floating-label-group">
+                    <div class="input-with-icon">
+                        <i class="fas fa-hourglass-half"></i>
+                        <input asp-for="EstimatedShelfLifeDays" class="form-control" type="number" placeholder="Raf Ömrü" />
+                    </div>
+                    <label asp-for="EstimatedShelfLifeDays">Raf Ömrü (Gün)</label>
+                </div>
+                
+                <div class="form-group floating-label-group">
+                    <div class="input-with-icon">
+                        <i class="fas fa-image"></i>
+                        <input asp-for="ImageUrl" class="form-control" placeholder="Görsel URL" />
+                    </div>
+                    <label asp-for="ImageUrl">Ürün Görseli</label>
+                </div>
+            </div>
+
+            <div class="form-section-header mt-4">
+                <h3><i class="fas fa-map-marker-alt"></i> Konum Bilgileri</h3>
+            </div>
+
+            <div class="map-container-premium">
+                <div class="map-header-controls">
+                    <div class="map-search-wrapper">
+                        <i class="fas fa-search"></i>
+                        <input type="text" id="mapSearchInput" placeholder="İl, ilçe veya adres arayın..." />
+                        <button type="button" id="mapSearchBtn">Ara</button>
+                    </div>
+                    <button type="button" id="myLocationBtn" class="btn-location-fab" title="Konumumu Kullan">
+                        <i class="fas fa-crosshairs"></i>
+                    </button>
+                </div>
+                <div id="locationMap" class="location-map-canvas"></div>
+                <div class="map-footer-hint">
+                    <i class="fas fa-info-circle"></i> Haritaya tıklayarak veya arama yaparak teslimat konumunu güncelleyin.
+                </div>
+            </div>
+
+            <div class="location-details-box mt-3">
+                 <div class="form-group floating-label-group">
+                    <div class="input-with-icon">
+                        <i class="fas fa-map-pin"></i>
+                        <textarea asp-for="LocationAddress" class="form-control" rows="2" id="LocationAddress" placeholder="Açık Adres"></textarea>
+                    </div>
+                    <label asp-for="LocationAddress">Teslimat Adresi</label>
+                    <span asp-validation-for="LocationAddress" class="text-danger"></span>
+                </div>
+
+                <div class="form-row coords-hidden">
+                    <input type="hidden" asp-for="Latitude" id="Latitude" />
+                    <input type="hidden" asp-for="Longitude" id="Longitude" />
+                </div>
+            </div>
+
+            <div class="form-footer-actions mt-5">
+                <a href="/Product" class="btn btn-outline btn-lg">İptal</a>
+                <button type="submit" class="btn btn-primary btn-lg"><i class="fas fa-save"></i> Değişiklikleri Kaydet</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // --- Mevcut konum bilgisi ---
+            const existingLat = @(Model.Latitude != 0 ? Model.Latitude.ToString(System.Globalization.CultureInfo.InvariantCulture) : "39.0");
+            const existingLng = @(Model.Longitude != 0 ? Model.Longitude.ToString(System.Globalization.CultureInfo.InvariantCulture) : "35.0");
+            const hasExisting = @(Model.Latitude != 0 ? "true" : "false");
+
+            const map = L.map('locationMap').setView([existingLat, existingLng], hasExisting ? 14 : 6);
+
+            L.tileLayer('https://{s}.tile.osm.org/{z}/{x}/{y}.png', {
+                attribution: '© OSM',
+                maxZoom: 18
+            }).addTo(map);
+
+            let marker = null;
+
+            if (hasExisting) {
+                setMarker(existingLat, existingLng);
+            }
+
+            map.on('click', function (e) {
+                setMarker(e.latlng.lat, e.latlng.lng);
+                reverseGeocode(e.latlng.lat, e.latlng.lng);
+            });
+
+            function setMarker(lat, lng) {
+                if (marker) {
+                    marker.setLatLng([lat, lng]);
+                } else {
+                    marker = L.marker([lat, lng], { draggable: true }).addTo(map);
+                    marker.on('dragend', function (e) {
+                        const pos = e.target.getLatLng();
+                        updateFields(pos.lat, pos.lng);
+                        reverseGeocode(pos.lat, pos.lng);
+                    });
+                }
+                updateFields(lat, lng);
+                map.setView([lat, lng], Math.max(map.getZoom(), 14));
+            }
+
+            function updateFields(lat, lng) {
+                document.getElementById('Latitude').value = lat.toFixed(6);
+                document.getElementById('Longitude').value = lng.toFixed(6);
+            }
+
+            function reverseGeocode(lat, lng) {
+                fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1&accept-language=tr`)
+                    .then(r => r.json())
+                    .then(data => {
+                        if (data && data.display_name) {
+                            document.getElementById('LocationAddress').value = data.display_name;
+                            document.getElementById('LocationAddress').parentElement.parentElement.classList.add('has-value');
+                        }
+                    });
+            }
+
+            function searchLocation() {
+                const query = document.getElementById('mapSearchInput').value;
+                if (!query) return;
+                fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=1&countrycodes=tr&accept-language=tr`)
+                    .then(r => r.json())
+                    .then(data => {
+                        if (data[0]) {
+                            const lat = parseFloat(data[0].lat);
+                            const lng = parseFloat(data[0].lon);
+                            setMarker(lat, lng);
+                            document.getElementById('LocationAddress').value = data[0].display_name;
+                        }
+                    });
+            }
+
+            document.getElementById('mapSearchBtn').addEventListener('click', searchLocation);
+            document.getElementById('mapSearchInput').addEventListener('keypress', e => { if (e.key === 'Enter') { e.preventDefault(); searchLocation(); } });
+            
+            document.getElementById('myLocationBtn').addEventListener('click', function() {
+                if (navigator.geolocation) {
+                    navigator.geolocation.getCurrentPosition(pos => {
+                        setMarker(pos.coords.latitude, pos.coords.longitude);
+                        reverseGeocode(pos.coords.latitude, pos.coords.longitude);
+                    });
+                }
+            });
+        });
+    </script>
+}

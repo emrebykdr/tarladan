@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="tarimpazari/tarimpazari.csproj" />
+  <Project Path="TarimPazari.Core/TarimPazari.Core.csproj" />
+  <Project Path="TarimPazari.DataAccess/TarimPazari.DataAccess.csproj" />
+  <Project Path="TarimPazari.Business/TarimPazari.Business.csproj" />
+</Solution>

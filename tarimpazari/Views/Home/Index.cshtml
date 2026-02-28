@@ -1,0 +1,86 @@
+﻿@model IEnumerable<Product>
+@{
+    ViewData["Title"] = "Tarladan Sofrana";
+}
+
+<!-- PROMOSYON BANNER -->
+<section class="promo-banner">
+    <h2>İlk Siparişe Özel %20 İndirim</h2>
+    <p>Tarladan sofrana en taze ürünler, yerel üreticilerden kapına gelsin.</p>
+    <a href="/" class="btn-promo">Ürünleri Keşfet</a>
+</section>
+
+<!-- ÜRÜN LİSTESİ -->
+<section class="products-section">
+    <h2 class="section-title">
+        @if (!string.IsNullOrEmpty(ViewBag.Search as string))
+        {
+            <i class="fas fa-search" style="font-size: 0.9em; opacity: 0.5; margin-right: 5px;"></i>
+            <span>"@ViewBag.Search" için sonuçlar</span>
+        }
+        else if (!string.IsNullOrEmpty(ViewBag.Category as string))
+        {
+            <i class="fas fa-tag" style="font-size: 0.9em; opacity: 0.7; margin-right: 5px; color: var(--green);"></i>
+            <span>@ViewBag.Category Ürünleri</span>
+        }
+        else
+        {
+            <span>Popüler İlanlar</span>
+        }
+        <small>(@Model.Count() ürün)</small>
+    </h2>
+
+    @if (!Model.Any())
+    {
+        <div class="empty-state">
+            <i class="fas fa-box-open"></i>
+            <h3>Ürün bulunamadı</h3>
+            <p>Arama kriterlerinize uygun ürün bulunmamaktadır.</p>
+        </div>
+    }
+    else
+    {
+        <div class="product-grid">
+            @foreach (var product in Model)
+            {
+                <div class="product-card">
+                    <button class="product-favorite" title="Favorilere Ekle">
+                        <i class="far fa-heart"></i>
+                    </button>
+                    <a href="/Product/Details/@product.Id" style="text-decoration:none; color:inherit;">
+                        <div class="product-image">
+                            @if (!string.IsNullOrEmpty(product.ImageUrl))
+                            {
+                                <img src="@product.ImageUrl" alt="@product.Name" />
+                            }
+                            else
+                            {
+                                <div class="product-image-placeholder">
+                                    <i class="fas fa-leaf"></i>
+                                </div>
+                            }
+                            @if (product.IsOrganic)
+                            {
+                                <span class="badge organic">🌿 Organik</span>
+                            }
+                        </div>
+                        <div class="product-info">
+                            <div class="product-price">
+                                <span class="price">@product.Price.ToString("N0") TL</span>
+                                <span class="unit">/ @(product.Unit ?? "kg")</span>
+                            </div>
+                            <h3 class="product-name">@product.Name</h3>
+                            <div class="product-meta">
+                                @if (!string.IsNullOrEmpty(product.CityOfOrigin))
+                                {
+                                    <span class="meta-item"><i class="fas fa-map-marker-alt"></i> @product.CityOfOrigin</span>
+                                }
+                                <span class="meta-item"><i class="fas fa-clock"></i> @(product.CreatedAt.Date == DateTime.Today ? "Bugün" : product.CreatedAt.Date == DateTime.Today.AddDays(-1) ? "Dün" : product.CreatedAt.ToString("dd MMM"))</span>
+                            </div>
+                        </div>
+                    </a>
+                </div>
+            }
+        </div>
+    }
+</section>

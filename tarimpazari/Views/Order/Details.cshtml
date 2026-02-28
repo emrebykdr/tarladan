@@ -1,0 +1,185 @@
+@model Order
+@{
+    ViewData["Title"] = "Sipariş Detayı";
+    var isSeller = (bool)ViewBag.IsSeller;
+    var statusText = Model.Status switch
+    {
+        TarimPazari.Core.Enums.OrderStatus.Agreed => "Anlaşıldı",
+        TarimPazari.Core.Enums.OrderStatus.Preparing => "Hazırlanıyor",
+        TarimPazari.Core.Enums.OrderStatus.ReadyForPickup => "Teslimata Hazır",
+        TarimPazari.Core.Enums.OrderStatus.Completed => "Tamamlandı",
+        _ => Model.Status.ToString()
+    };
+}
+
+<div class="page-header animated-fade-in">
+    <div class="header-content">
+        <a href="/Order" class="btn-back-link"><i class="fas fa-arrow-left"></i> Siparişlere Dön</a>
+        <h1>Sipariş Detayı <span class="order-id">#@Model.Id.ToString().Substring(0, 8)</span></h1>
+    </div>
+    <div class="header-status">
+        <span class="badge badge-lg @(Model.Status switch {
+            TarimPazari.Core.Enums.OrderStatus.Agreed => "status-agreed",
+            TarimPazari.Core.Enums.OrderStatus.Preparing => "status-preparing",
+            TarimPazari.Core.Enums.OrderStatus.ReadyForPickup => "status-ready",
+            TarimPazari.Core.Enums.OrderStatus.Completed => "status-completed",
+            _ => ""
+        })">@statusText</span>
+    </div>
+</div>
+
+<div class="order-detail-container animate-slide-up">
+    <!-- DURUM AKIŞI -->
+    <div class="glass-panel status-flow-card mb-4">
+        <div class="status-step-flow">
+            <div class="status-step @(Model.Status >= TarimPazari.Core.Enums.OrderStatus.Agreed ? "completed" : "") @(Model.Status == TarimPazari.Core.Enums.OrderStatus.Agreed ? "active" : "")">
+                <div class="step-circle"><i class="fas fa-handshake"></i></div>
+                <div class="step-label">Anlaşıldı</div>
+            </div>
+            <div class="status-step @(Model.Status >= TarimPazari.Core.Enums.OrderStatus.Preparing ? "completed" : "") @(Model.Status == TarimPazari.Core.Enums.OrderStatus.Preparing ? "active" : "")">
+                <div class="step-circle"><i class="fas fa-box-open"></i></div>
+                <div class="step-label">Hazırlanıyor</div>
+            </div>
+            <div class="status-step @(Model.Status >= TarimPazari.Core.Enums.OrderStatus.ReadyForPickup ? "completed" : "") @(Model.Status == TarimPazari.Core.Enums.OrderStatus.ReadyForPickup ? "active" : "")">
+                <div class="step-circle"><i class="fas fa-truck-loading"></i></div>
+                <div class="step-label">Teslimata Hazır</div>
+            </div>
+            <div class="status-step @(Model.Status >= TarimPazari.Core.Enums.OrderStatus.Completed ? "completed" : "") @(Model.Status == TarimPazari.Core.Enums.OrderStatus.Completed ? "active" : "")">
+                <div class="step-circle"><i class="fas fa-check-double"></i></div>
+                <div class="step-label">Tamamlandı</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="order-info-columns">
+        <div class="info-column-main">
+            <!-- ÜRÜN BİLGİSİ -->
+            <div class="glass-panel info-card mb-4">
+                <div class="card-header">
+                    <h3><i class="fas fa-leaf"></i> Ürün ve Ödeme</h3>
+                </div>
+                <div class="card-body">
+                    <div class="product-mini-detail">
+                        <img src="@(Model.Product?.ImageUrl ?? "/images/no-image.png")" alt="Ürün" />
+                        <div class="text">
+                            <h4>@(Model.Product?.Name ?? "Ürün")</h4>
+                            <p>@Model.AgreedPrice.ToString("N2") ₺ x @Model.Quantity @(Model.Product?.Unit ?? "birim")</p>
+                        </div>
+                    </div>
+                    <div class="order-summary-row total">
+                        <span>Toplam Tutar</span>
+                        <span class="price">₺@Model.TotalAmount.ToString("N2")</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TESLİMAT KODU / DOĞRULAMA -->
+            @if (!isSeller && Model.DeliveryCode != null && !Model.DeliveryCode.IsUsed && Model.Status != TarimPazari.Core.Enums.OrderStatus.Completed)
+            {
+                <div class="glass-panel delivery-code-card mb-4">
+                    <div class="card-header">
+                        <h3><i class="fas fa-shield-alt"></i> Güvenli Teslimat</h3>
+                    </div>
+                    <div class="card-body text-center">
+                        <p class="hint">Ürünü teslim alırken bu kodu satıcıya söyleyin:</p>
+                        <div class="modern-code-display">
+                            @foreach (var ch in Model.DeliveryCode.Code)
+                            {
+                                <span class="code-char">@ch</span>
+                            }
+                        </div>
+                        <p class="expiry"><i class="fas fa-clock"></i> @Model.DeliveryCode.ExpiresAt.ToString("dd.MM.yyyy HH:mm") tarihine kadar geçerli</p>
+                    </div>
+                </div>
+            }
+
+            @if (isSeller && Model.Status == TarimPazari.Core.Enums.OrderStatus.ReadyForPickup)
+            {
+                <div class="glass-panel verify-action-card mb-4">
+                    <div class="card-header">
+                        <h3><i class="fas fa-lock"></i> Teslimat Doğrulama</h3>
+                    </div>
+                    <div class="card-body">
+                        <p>Alıcıdan aldığınız 6 haneli kodu girerek siparişi tamamlayın.</p>
+                        <form asp-action="VerifyDelivery" method="post" class="verify-code-form">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="orderId" value="@Model.Id" />
+                            <div class="code-input-wrapper">
+                                <input type="text" name="code" maxlength="6" placeholder="Kodu girin" required pattern="[A-Za-z0-9]{6}" />
+                                <button type="submit" class="btn btn-primary">Doğrula ve Bitir</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            }
+
+            <!-- DURUM GÜNCELLEME (Çiftçi) -->
+            @if (isSeller && (Model.Status == TarimPazari.Core.Enums.OrderStatus.Agreed || Model.Status == TarimPazari.Core.Enums.OrderStatus.Preparing))
+            {
+                <div class="glass-panel action-card mb-4">
+                    <div class="card-header">
+                        <h3><i class="fas fa-tasks"></i> Durum Yönetimi</h3>
+                    </div>
+                    <div class="card-body">
+                         <form asp-action="UpdateStatus" method="post">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="orderId" value="@Model.Id" />
+                            @if (Model.Status == TarimPazari.Core.Enums.OrderStatus.Agreed)
+                            {
+                                <input type="hidden" name="newStatus" value="@TarimPazari.Core.Enums.OrderStatus.Preparing" />
+                                <button type="submit" class="btn btn-primary btn-lg btn-block">
+                                    <i class="fas fa-spinner"></i> Hazırlamaya Başla
+                                </button>
+                            }
+                            else if (Model.Status == TarimPazari.Core.Enums.OrderStatus.Preparing)
+                            {
+                                <input type="hidden" name="newStatus" value="@TarimPazari.Core.Enums.OrderStatus.ReadyForPickup" />
+                                <button type="submit" class="btn btn-primary btn-lg btn-block">
+                                    <i class="fas fa-check-circle"></i> Teslimata Hazır
+                                </button>
+                            }
+                        </form>
+                    </div>
+                </div>
+            }
+        </div>
+
+        <div class="info-column-side">
+            <!-- TARAFLAR -->
+            <div class="glass-panel part-info-card mb-4">
+                <div class="card-header">
+                    <h3><i class="fas fa-users"></i> Bilgiler</h3>
+                </div>
+                <div class="card-body">
+                    <div class="info-item">
+                        <span class="label">Satıcı</span>
+                        <span class="value">@(Model.Seller?.FullName ?? "—")</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="label">Alıcı</span>
+                        <span class="value">@(Model.Buyer?.FullName ?? "—")</span>
+                    </div>
+                    @if (!string.IsNullOrEmpty(Model.DeliveryLocation))
+                    {
+                        <div class="info-item">
+                            <span class="label">Buluşma Noktası</span>
+                            <span class="value"><i class="fas fa-map-marker-alt"></i> @Model.DeliveryLocation</span>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <!-- TAMAMLANMA -->
+            @if (Model.Status == TarimPazari.Core.Enums.OrderStatus.Completed)
+            {
+                <div class="glass-panel completed-card">
+                    <div class="text-center p-3">
+                        <div class="success-icon"><i class="fas fa-check-circle"></i></div>
+                        <h4>Tamamlandı</h4>
+                        <p>@Model.CompletedAt?.ToString("dd.MM.yyyy HH:mm")</p>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</div>

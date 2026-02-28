@@ -1,0 +1,167 @@
+@model Product
+@{
+    ViewData["Title"] = Model.Name;
+}
+
+<div class="product-detail">
+    <div class="detail-header animated-fade-in">
+        <a href="/" class="btn btn-outline btn-sm"><i class="fas fa-arrow-left"></i> Pazara Dön</a>
+    </div>
+
+    <div class="detail-grid">
+        <div class="detail-image animate-slide-up">
+            @if (!string.IsNullOrEmpty(Model.ImageUrl))
+            {
+                <div class="image-wrapper">
+                    <img src="@Model.ImageUrl" alt="@Model.Name" class="main-image" />
+                    @if (Model.IsOrganic) { <span class="badge organic-floated"><i class="fas fa-leaf"></i> %100 Organik</span> }
+                </div>
+            }
+            else
+            {
+                <div class="product-image-placeholder large">
+                    <i class="fas fa-leaf"></i>
+                    <span>Görsel Yok</span>
+                </div>
+            }
+        </div>
+
+        <div class="detail-info animate-slide-up" style="animation-delay: 0.1s;">
+            <div class="info-top">
+                <span class="category-tag">@(Model.Category ?? "Genel")</span>
+                <h1>@Model.Name</h1>
+            </div>
+
+            <div class="detail-price-box">
+                <div class="price-content">
+                    <span class="price-large">₺@Model.Price.ToString("N2")</span>
+                    <span class="unit">/ @(Model.Unit ?? "adet")</span>
+                </div>
+                <div class="stock-badge @(Model.StockQuantity > 0 ? "in-stock" : "out-of-stock")">
+                    <i class="fas fa-cubes"></i> @Model.StockQuantity @(Model.Unit ?? "adet") Stokta
+                </div>
+            </div>
+
+            @if (!string.IsNullOrEmpty(Model.Description))
+            {
+                <div class="description-section">
+                    <h3>Ürün Açıklaması</h3>
+                    <p>@Model.Description</p>
+                </div>
+            }
+
+            <div class="specs-grid">
+                <div class="spec-tile">
+                    <i class="fas fa-shopping-cart"></i>
+                    <div class="spec-text">
+                        <span>Min. Sipariş</span>
+                        <strong>@Model.MinimumOrderQuantity @(Model.Unit ?? "adet")</strong>
+                    </div>
+                </div>
+                @if (!string.IsNullOrEmpty(Model.CityOfOrigin)) { 
+                    <div class="spec-tile">
+                        <i class="fas fa-map-marker-alt"></i>
+                        <div class="spec-text">
+                            <span>Menşe</span>
+                            <strong>@Model.CityOfOrigin</strong>
+                        </div>
+                    </div>
+                }
+                @if (Model.HarvestDate != default) { 
+                    <div class="spec-tile">
+                        <i class="fas fa-calendar-check"></i>
+                        <div class="spec-text">
+                            <span>Hasat Tarihi</span>
+                            <strong>@Model.HarvestDate.ToString("dd MMM yyyy")</strong>
+                        </div>
+                    </div>
+                }
+                @if (Model.EstimatedShelfLifeDays > 0) { 
+                    <div class="spec-tile">
+                        <i class="fas fa-hourglass-half"></i>
+                        <div class="spec-text">
+                            <span>Raf Ömrü</span>
+                            <strong>@Model.EstimatedShelfLifeDays Gün</strong>
+                        </div>
+                    </div>
+                }
+            </div>
+
+            <!-- KONUM & SATICI -->
+            <div class="info-cards">
+                @if (!string.IsNullOrEmpty(Model.LocationAddress))
+                {
+                    <div class="info-card location-card">
+                        <div class="card-icon"><i class="fas fa-map-marked-alt"></i></div>
+                        <div class="card-body">
+                            <strong>Teslimat Konumu</strong>
+                            <p>@Model.LocationAddress</p>
+                        </div>
+                    </div>
+                }
+
+                @if (Model.Seller != null)
+                {
+                    <div class="info-card seller-card">
+                        <div class="card-icon"><i class="fas fa-store"></i></div>
+                        <div class="card-body">
+                            <div class="seller-meta">
+                                <strong>@Model.Seller.FullName</strong>
+                                <span class="trust-badge">
+                                    <i class="fas fa-certificate"></i> @Model.Seller.TrustScore.ToString("N1") Puan
+                                </span>
+                            </div>
+                            <p>@(Model.Seller.FarmName ?? $"{Model.Seller.City} Çiftçisi")</p>
+                        </div>
+                        <a href="/Chat/Start/@Model.Id" class="card-action"><i class="fas fa-chevron-right"></i></a>
+                    </div>
+                }
+            </div>
+
+            <!-- EYLEMLER -->
+            <div class="detail-actions">
+                @if (User.IsInRole("Alici"))
+                {
+                    <form asp-controller="Chat" asp-action="Start" asp-route-id="@Model.Id" method="post" class="action-form">
+                        @Html.AntiForgeryToken()
+                        <button type="submit" class="btn btn-primary btn-xl">
+                            <i class="fas fa-comments"></i> Pazarlık Başlat
+                        </button>
+                    </form>
+
+                    <div class="glass-panel quick-offer-panel" style="margin-top: 1rem; padding: 1.5rem; border-radius: 16px;">
+                        <h3 style="margin-bottom: 1rem; font-size: 1.1rem;"><i class="fas fa-hand-holding-usd"></i> Hızlı Teklif Ver</h3>
+                        <form asp-controller="Chat" asp-action="QuickOffer" method="post">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="ProductId" value="@Model.Id" />
+                            <div style="display: flex; gap: 0.75rem; flex-wrap: wrap; align-items: flex-end;">
+                                <div style="flex: 1; min-width: 120px;">
+                                    <label style="font-size: 0.85rem; opacity: 0.8;">Birim Fiyat (₺)</label>
+                                    <input type="number" name="OfferedPrice" step="0.01" min="0.01" required
+                                           placeholder="@Model.Price.ToString("N2")"
+                                           class="form-control" style="margin-top: 0.25rem;" />
+                                </div>
+                                <div style="flex: 1; min-width: 100px;">
+                                    <label style="font-size: 0.85rem; opacity: 0.8;">Miktar (@(Model.Unit ?? "adet"))</label>
+                                    <input type="number" name="Quantity" min="@Model.MinimumOrderQuantity" max="@Model.StockQuantity" required
+                                           placeholder="@Model.MinimumOrderQuantity"
+                                           class="form-control" style="margin-top: 0.25rem;" />
+                                </div>
+                                <button type="submit" class="btn btn-outline btn-lg" style="height: fit-content;">
+                                    <i class="fas fa-paper-plane"></i> Gönder
+                                </button>
+                            </div>
+                            <p style="font-size: 0.8rem; opacity: 0.6; margin-top: 0.5rem;">
+                                Min. @Model.MinimumOrderQuantity @(Model.Unit ?? "adet") • Stok: @Model.StockQuantity @(Model.Unit ?? "adet")
+                            </p>
+                        </form>
+                    </div>
+                }
+                else if (!User.Identity.IsAuthenticated)
+                {
+                     <a href="/Account/Login" class="btn btn-primary btn-xl">Giriş Yap ve Teklif Ver</a>
+                }
+            </div>
+        </div>
+    </div>
+</div>

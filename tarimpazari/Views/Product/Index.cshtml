@@ -1,0 +1,63 @@
+@model IEnumerable<Product>
+@{
+    ViewData["Title"] = "Ürünlerim";
+}
+
+<div class="page-header">
+    <h1><i class="fas fa-box"></i> Ürünlerim</h1>
+    <a href="/Product/Create" class="btn btn-primary"><i class="fas fa-plus"></i> Yeni Ürün Ekle</a>
+</div>
+
+@if (!Model.Any())
+{
+    <div class="empty-state">
+        <i class="fas fa-seedling"></i>
+        <h3>Henüz ürün eklemediniz</h3>
+        <p>İlk ürününüzü ekleyerek satışa başlayın.</p>
+        <a href="/Product/Create" class="btn btn-primary">Ürün Ekle</a>
+    </div>
+}
+else
+{
+    <div class="table-responsive">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Ürün</th>
+                    <th>Kategori</th>
+                    <th>Fiyat</th>
+                    <th>Stok</th>
+                    <th>Durum</th>
+                    <th>İşlemler</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var p in Model)
+                {
+                    <tr>
+                        <td>
+                            <strong>@p.Name</strong>
+                            @if (p.IsOrganic) { <span class="badge organic">Organik</span> }
+                        </td>
+                        <td>@(p.Category ?? "-")</td>
+                        <td class="price">₺@p.Price.ToString("N2") / @(p.Unit ?? "adet")</td>
+                        <td>@p.StockQuantity</td>
+                        <td>
+                            <span class="badge @(p.IsActive ? "active" : "inactive")">
+                                @(p.IsActive ? "Aktif" : "Pasif")
+                            </span>
+                        </td>
+                        <td class="actions">
+                            <a href="/Product/Edit/@p.Id" class="btn btn-sm btn-outline" title="Düzenle"><i class="fas fa-edit"></i></a>
+                            <a href="/Product/Details/@p.Id" class="btn btn-sm" title="Detay"><i class="fas fa-eye"></i></a>
+                            <form asp-action="Delete" asp-route-id="@p.Id" method="post" style="display:inline" onsubmit="return confirm('Bu ürünü silmek istediğinize emin misiniz?')">
+                                @Html.AntiForgeryToken()
+                                <button type="submit" class="btn btn-sm btn-danger" title="Sil"><i class="fas fa-trash"></i></button>
+                            </form>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
