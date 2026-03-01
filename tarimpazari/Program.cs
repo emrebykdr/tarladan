@@ -8,6 +8,9 @@ using TarimPazari.DataAccess.Context;
 using TarimPazari.DataAccess.Repositories;
 using tarimpazari.Hubs;
 
+// PostgreSQL timestamp uyumluluğu — DateTime.Now (Local) desteği
+AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
+
 var builder = WebApplication.CreateBuilder(args);
 
 // ========== PORT AYARI (Render için) ==========
