@@ -25,9 +25,6 @@ WORKDIR /app
 # Publish edilen dosyaları kopyala
 COPY --from=build /app/publish .
 
-# Render PORT environment variable'ını kullan
-ENV ASPNETCORE_URLS=http://+:${PORT:-10000}
-
 EXPOSE 10000
 
 ENTRYPOINT ["dotnet", "tarimpazari.dll"]
