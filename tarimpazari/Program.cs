@@ -21,12 +21,23 @@ string connectionString;
 if (!string.IsNullOrEmpty(databaseUrl))
 {
     // Render DATABASE_URL formatını EF Core connection string'e çevir
-    var uri = new Uri(databaseUrl);
-    var userInfo = uri.UserInfo.Split(':');
-    connectionString = $"Host={uri.Host};Port={uri.Port};Database={uri.AbsolutePath.TrimStart('/')};Username={userInfo[0]};Password={userInfo[1]};SSL Mode=Require;Trust Server Certificate=true";
+    // postgres://user:pass@host:port/dbname veya postgresql://...
+    try
+    {
+        var uri = new Uri(databaseUrl);
+        var userInfo = uri.UserInfo.Split(':');
+        connectionString = $"Host={uri.Host};Port={uri.Port};Database={uri.AbsolutePath.TrimStart('/')};Username={userInfo[0]};Password={userInfo[1]};SSL Mode=Require;Trust Server Certificate=true";
+        Console.WriteLine($"✅ DATABASE_URL okundu. Host: {uri.Host}, DB: {uri.AbsolutePath.TrimStart('/')}");
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"❌ DATABASE_URL parse hatası: {ex.Message}");
+        connectionString = builder.Configuration.GetConnectionString("DefaultConnection")!;
+    }
 }
 else
 {
+    Console.WriteLine("⚠️ DATABASE_URL bulunamadı, appsettings.json kullanılıyor.");
     connectionString = builder.Configuration.GetConnectionString("DefaultConnection")!;
 }
 
@@ -84,11 +95,15 @@ builder.Services.AddSignalR(options =>
 var app = builder.Build();
 
 // ========== SEED: VERİTABANI + ROL VE ADMİN KULLANICI OLUŞTURMA ==========
-using (var scope = app.Services.CreateScope())
+try
 {
-    // Veritabanını otomatik migrate et (tabloları oluştur)
-    var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-    dbContext.Database.Migrate();
+    using (var scope = app.Services.CreateScope())
+    {
+        // Veritabanını otomatik migrate et (tabloları oluştur)
+        var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        Console.WriteLine("📦 Veritabanı migration başlatılıyor...");
+        dbContext.Database.Migrate();
+        Console.WriteLine("✅ Veritabanı migration tamamlandı.");
 
     var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
     var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
@@ -141,6 +156,12 @@ using (var scope = app.Services.CreateScope())
                 Console.WriteLine($"❌ {email} şifre sıfırlama hatası.");
         }
     }
+    }
+}
+catch (Exception ex)
+{
+    Console.WriteLine($"❌ Veritabanı başlatma hatası: {ex.Message}");
+    Console.WriteLine($"Stack: {ex.StackTrace}");
 }
 
 // ========== MIDDLEWARE PIPELINE ==========
