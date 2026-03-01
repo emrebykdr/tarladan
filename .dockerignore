@@ -1,0 +1,14 @@
+**/.git
+**/.vs
+**/bin
+**/obj
+**/.gitignore
+**/build_output*.txt
+**/*.resolved
+**/*.user
+**/*.suo
+**/Thumbs.db
+**/.DS_Store
+**/image
+**/PROJE_OZETI.md
+**/new.txt

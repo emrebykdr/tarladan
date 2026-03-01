@@ -1,0 +1,19 @@
+databases:
+  - name: tarimpazari-db
+    plan: free
+    databaseName: tarimpazaridb
+    user: tarimpazari
+
+services:
+  - type: web
+    name: tarimpazari
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    envVars:
+      - key: ASPNETCORE_ENVIRONMENT
+        value: Production
+      - key: DATABASE_URL
+        fromDatabase:
+          name: tarimpazari-db
+          property: connectionURI

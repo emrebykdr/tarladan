@@ -10,9 +10,28 @@ using tarimpazari.Hubs;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// ========== VERİ TABANI BAĞLANTISI ==========
+// ========== PORT AYARI (Render için) ==========
+var port = Environment.GetEnvironmentVariable("PORT") ?? "10000";
+builder.WebHost.UseUrls($"http://+:{port}");
+
+// ========== VERİ TABANI BAĞLANTISI (PostgreSQL) ==========
+var databaseUrl = Environment.GetEnvironmentVariable("DATABASE_URL");
+string connectionString;
+
+if (!string.IsNullOrEmpty(databaseUrl))
+{
+    // Render DATABASE_URL formatını EF Core connection string'e çevir
+    var uri = new Uri(databaseUrl);
+    var userInfo = uri.UserInfo.Split(':');
+    connectionString = $"Host={uri.Host};Port={uri.Port};Database={uri.AbsolutePath.TrimStart('/')};Username={userInfo[0]};Password={userInfo[1]};SSL Mode=Require;Trust Server Certificate=true";
+}
+else
+{
+    connectionString = builder.Configuration.GetConnectionString("DefaultConnection")!;
+}
+
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+    options.UseNpgsql(connectionString));
 
 // ========== IDENTITY YAPILANDIRMASI ==========
 builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
@@ -64,9 +83,13 @@ builder.Services.AddSignalR(options =>
 
 var app = builder.Build();
 
-// ========== SEED: ROL VE ADMİN KULLANICI OLUŞTURMA ==========
+// ========== SEED: VERİTABANI + ROL VE ADMİN KULLANICI OLUŞTURMA ==========
 using (var scope = app.Services.CreateScope())
 {
+    // Veritabanını otomatik migrate et (tabloları oluştur)
+    var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+    dbContext.Database.Migrate();
+
     var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
     var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
 
