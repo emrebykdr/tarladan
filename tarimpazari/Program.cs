@@ -165,23 +165,28 @@ catch (Exception ex)
 }
 
 // ========== MIDDLEWARE PIPELINE ==========
-if (!app.Environment.IsDevelopment())
+if (app.Environment.IsDevelopment())
 {
-    app.UseExceptionHandler("/Home/Error");
-    app.UseHsts();
+    app.UseDeveloperExceptionPage();
+}
+else
+{
+    // Geçici olarak detaylı hata sayfası açık (debug için)
+    app.UseDeveloperExceptionPage();
+    // app.UseExceptionHandler("/Home/Error");
+    // app.UseHsts();
 }
 
-app.UseHttpsRedirection();
+// Render HTTPS'i kendi load balancer'ında yönetir, redirect gerekmez
+// app.UseHttpsRedirection();
 app.UseRouting();
 app.UseAuthentication();
 app.UseAuthorization();
 
-app.UseStaticFiles(); // uploads/voice/ gibi dinamik dosyalar için
-app.MapStaticAssets();
+app.UseStaticFiles();
 app.MapControllerRoute(
     name: "default",
-    pattern: "{controller=Home}/{action=Index}/{id?}")
-    .WithStaticAssets();
+    pattern: "{controller=Home}/{action=Index}/{id?}");
 
 // SignalR Hub endpoint
 app.MapHub<ChatHub>("/chatHub");
