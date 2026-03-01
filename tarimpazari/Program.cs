@@ -117,7 +117,7 @@ try
     }
 
     // Admin kullanıcısı oluştur
-    var adminEmail = "admin@tarimpazari.com";
+    var adminEmail = "admin@tarladan.com";
     if (await userManager.FindByEmailAsync(adminEmail) == null)
     {
         var admin = new ApplicationUser
@@ -129,7 +129,7 @@ try
             IsApproved = true,
             EmailConfirmed = true
         };
-        var result = await userManager.CreateAsync(admin, "Admin123!");
+        var result = await userManager.CreateAsync(admin, "Admin123");
         if (result.Succeeded)
         {
             await userManager.AddToRoleAsync(admin, "Admin");
