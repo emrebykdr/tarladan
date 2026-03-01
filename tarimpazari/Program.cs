@@ -116,9 +116,10 @@ try
             await roleManager.CreateAsync(new IdentityRole(role));
     }
 
-    // Admin kullanıcısı oluştur
+    // Admin kullanıcısı oluştur veya şifresini sıfırla
     var adminEmail = "admin@tarladan.com";
-    if (await userManager.FindByEmailAsync(adminEmail) == null)
+    var existingAdmin = await userManager.FindByEmailAsync(adminEmail);
+    if (existingAdmin == null)
     {
         var admin = new ApplicationUser
         {
@@ -140,6 +141,16 @@ try
             foreach (var error in result.Errors)
                 Console.WriteLine($"❌ Admin oluşturma hatası: {error.Description}");
         }
+    }
+    else
+    {
+        // Admin zaten varsa şifresini sıfırla
+        var token = await userManager.GeneratePasswordResetTokenAsync(existingAdmin);
+        var resetResult = await userManager.ResetPasswordAsync(existingAdmin, token, "Admin123");
+        if (resetResult.Succeeded)
+            Console.WriteLine("✅ Admin şifresi 'Admin123' olarak sıfırlandı.");
+        else
+            Console.WriteLine("❌ Admin şifre sıfırlama hatası.");
     }
 
     // Şifre sıfırlama (test hesapları)
